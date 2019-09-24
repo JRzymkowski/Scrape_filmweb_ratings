@@ -9,6 +9,7 @@ driver = webdriver.Firefox(executable_path=r'D:\gecko\geckodriver.exe')
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import NoSuchElementException
 
 def wait_for_login(driver):
     try:
@@ -20,9 +21,18 @@ def wait_for_login(driver):
     except:
         pass
 
-def get_ratings_from(driver, url, friend_nick = ""):
+def get_friend_list(driver):
+    pass
 
-    driver.get(url)
+def link_to_next_page(driver):
+    try:
+        next_page_li = driver.find_element_by_class_name("pagination__item--next")
+        next_page_link = next_page_li.find_element_by_tag_name("a")
+        return next_page_link
+    except NoSuchElementException:
+        return None
+
+def get_ratings(driver, friend_nick = ""):
     # driver.implicitly_wait(10)
     time.sleep(2)
     films_elements = driver.find_elements_by_class_name("myVoteBox__mainBox")
@@ -50,11 +60,22 @@ def get_ratings_from(driver, url, friend_nick = ""):
 
     return films_data
 
+def get_ratings_starting(driver, url, friend_nick = ""):
+    driver.get(url)
+    films_data = []
+    films_data = get_ratings(driver, friend_nick=friend_nick)
+    next_page = link_to_next_page(driver)
+    if next_page != None:
+        next_page.click()
+        films_data += get_ratings(driver, friend_nick=friend_nick)
+    else:
+        print("No link to the next page found on: ", url)
 
+    return films_data
 
 try:
     wait_for_login(driver)
-    films_data = get_ratings_from(driver, "https://www.filmweb.pl/user/Mikolaj_Kastor/films?page=5", friend_nick="MK")
+    films_data = get_ratings_starting(driver, "https://www.filmweb.pl/user/Mikolaj_Kastor/films?page=10", friend_nick="MK")
 
     fieldnames = list(films_data[0].keys())
     with open('films.csv', 'w', newline='') as output_file:
