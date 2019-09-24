@@ -10,16 +10,20 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-try:
-    driver.get("https://www.filmweb.pl/")
-    user_name = WebDriverWait(driver, 100).until(
-        EC.presence_of_element_located((By.CLASS_NAME, "user__name"))
-    )
-    print("Logged in as: ", user_name.text)
+def wait_for_login(driver):
+    try:
+        driver.get("https://www.filmweb.pl/")
+        user_name = WebDriverWait(driver, 100).until(
+            EC.presence_of_element_located((By.CLASS_NAME, "user__name"))
+        )
+        print("Logged in as: ", user_name.text)
+    except:
+        pass
 
-    driver.get("https://www.filmweb.pl/user/Mikolaj_Kastor/films")
-    friend_nick = "Mikolaj_Kastor"
-    #driver.implicitly_wait(10)
+def get_ratings_from(driver, url, friend_nick = ""):
+
+    driver.get(url)
+    # driver.implicitly_wait(10)
     time.sleep(2)
     films_elements = driver.find_elements_by_class_name("myVoteBox__mainBox")
     print("number of films: ", len(films_elements))
@@ -44,12 +48,19 @@ try:
 
         films_data.append({'friend': friend_nick, 'title': title, 'year': year, 'rating': rating})
 
+    return films_data
+
+
+
+try:
+    wait_for_login(driver)
+    films_data = get_ratings_from(driver, "https://www.filmweb.pl/user/Mikolaj_Kastor/films?page=5", friend_nick="MK")
+
     fieldnames = list(films_data[0].keys())
     with open('films.csv', 'w', newline='') as output_file:
         dict_writer = csv.DictWriter(output_file, fieldnames=fieldnames)
         dict_writer.writeheader()
         dict_writer.writerows(films_data)
-
 
 finally:
     driver.quit()
