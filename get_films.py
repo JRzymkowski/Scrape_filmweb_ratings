@@ -66,7 +66,7 @@ def get_friend_list(driver):
             nicks.append(href.split("/")[-1])
 
     if nicks[-1] == "friends#":
-        return nicks[-1]
+        return nicks[:-1]
     else:
         return nicks
 
