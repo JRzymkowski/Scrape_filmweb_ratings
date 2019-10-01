@@ -1,15 +1,10 @@
-from selenium import webdriver
-import csv
 import time
-
-#driver = webdriver.Chrome(executable_path=r'D:\chromedriver_win32\chromedriver.exe')
-driver = webdriver.Firefox(executable_path=r'D:\gecko\geckodriver.exe')
-
 
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException
+
 
 def wait_for_login(driver):
     try:
@@ -21,10 +16,12 @@ def wait_for_login(driver):
     except:
         pass
 
+
 def get_my_username(driver):
     profile_wrapper = driver.find_element_by_class_name("user-profile__wrapper")
     href = profile_wrapper.get_attribute("href")
     return href.split("/")[-1]
+
 
 def get_friend_list(driver):
     ##assumes driver already at the friends page
@@ -70,6 +67,7 @@ def get_friend_list(driver):
     else:
         return nicks
 
+
 def link_to_next_page(driver):
     try:
         next_page_li = driver.find_element_by_class_name("pagination__item--next")
@@ -78,9 +76,9 @@ def link_to_next_page(driver):
     except NoSuchElementException:
         return None
 
+
 def get_available_ratings(driver, friend_nick = ""):
     films_elements = driver.find_elements_by_class_name("myVoteBox__mainBox")
-    #print("number of films: ", len(films_elements))
     tags = []
 
     films_data = []
@@ -90,14 +88,13 @@ def get_available_ratings(driver, friend_nick = ""):
             year = f.find_element_by_class_name("filmPreview__year").text
             rating = f.find_element_by_class_name("userRate__rate").text
 
-            #print(title, year, rating)
         except NoSuchElementException:
             print("Title, year or rating not found")
 
         try:
             tags_html = f.find_element_by_class_name("filmPreview__info--genres")
             tags = list(map(lambda x: x.text, tags_html.find_elements_by_tag_name("a")))
-            #print(tags)
+
         except NoSuchElementException:
             print("tags not located for ", title)
 
@@ -105,12 +102,14 @@ def get_available_ratings(driver, friend_nick = ""):
 
     return films_data
 
+
 def films_detail_missing(films_data):
     missing = False
     for f in films_data:
         if f['title'] == "" or f['year'] == "" or f['rating'] == "":
             missing = True
     return missing
+
 
 def get_ratings(driver, friend_nick = ""):
     films_data = get_available_ratings(driver, friend_nick)
@@ -123,12 +122,10 @@ def get_ratings(driver, friend_nick = ""):
         films_data = get_available_ratings(driver, friend_nick)
         missing = films_detail_missing(films_data)
 
-    #print("Number of tries: ", counter+1)
 
     if missing:
         print("Not all film details collected on ", driver.current_url)
     return films_data
-
 
 
 def get_ratings_starting(driver, url, friend_nick = ""):
@@ -136,7 +133,6 @@ def get_ratings_starting(driver, url, friend_nick = ""):
     films_data = []
     films_data = get_ratings(driver, friend_nick=friend_nick)
     next_page = link_to_next_page(driver)
-    print("Next page is: " + next_page.get_attribute("href"))
     counter = 0
     while next_page != None and counter < 10:
         counter += 1
@@ -149,22 +145,6 @@ def get_ratings_starting(driver, url, friend_nick = ""):
 
     return films_data
 
-try:
-    wait_for_login(driver)
-    my_username = get_my_username(driver)
-    print("Detected username: ", my_username)
-    # films_data = get_ratings_starting(driver, "https://www.filmweb.pl/user/Ositadima/films", friend_nick="MT")
-    # 
-    # fieldnames = list(films_data[0].keys())
-    # with open('films.csv', 'w', newline='') as output_file:
-    #     dict_writer = csv.DictWriter(output_file, fieldnames=fieldnames)
-    #     dict_writer.writeheader()
-    #     dict_writer.writerows(films_data)
 
-    driver.get("https://www.filmweb.pl/user/" + my_username + "/friends")
-    friends = get_friend_list(driver)
-    print(len(friends))
-    print(friends)
-
-finally:
-    driver.quit()
+def get_ratings_by(driver, nick):
+    return get_ratings_starting(driver, 'https://www.filmweb.pl/user/' + nick + '/films', friend_nick=nick)
